@@ -1,13 +1,13 @@
 {
   "name": "warnings-scraper",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "cli.js",
   "license": "MIT",
   "type": "module",
   "dependencies": {
     "clipboardy": "^2.3.0"
   },
   "bin": {
-    "warning-scrape": "./index.js"
+    "scrape": "./cli.js"
   }
 }
