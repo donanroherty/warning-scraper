@@ -49,7 +49,10 @@ function scrapeFile(filename) {
     }))
 
   const warningPairs = setErrorLines.map((el) => {
-    const params = el.text.split("SetError(GetWarning(L")[1].split("));")[0].split('"')
+    const params = el.text
+      .split("SetError(GetWarning(L")[1]
+      .split("));")[0]
+      .split('"')
     const key = params[1]
     const fallback = params[3]
     return {
@@ -76,9 +79,15 @@ function scrapeFolder() {
     return [...acc, ...fileResults]
   }, [])
 
-  clipboardy.writeSync(JSON.stringify(res))
+  const excelStr = res
+    .map((item) => {
+      return `${item.key}\t${"0"}\t${item.fallback}\t${"ERROR"}`
+    })
+    .join("\n")
 
-  console.log(res)
+  clipboardy.writeSync(excelStr)
+
+  console.log(excelStr)
 }
 
 scrapeFolder()
