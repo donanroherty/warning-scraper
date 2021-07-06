@@ -6,5 +6,8 @@
   "type": "module",
   "dependencies": {
     "clipboardy": "^2.3.0"
+  },
+  "bin": {
+    "warning-scrape": "./index.js"
   }
 }
