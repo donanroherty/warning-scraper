@@ -2,7 +2,22 @@ import fs from "fs"
 import { join } from "path"
 import clipboardy from "clipboardy"
 
-const targetFolder = "./target-files"
+const args = process.argv.slice(2)
+
+let targetFolder = "./"
+
+args.forEach((a, i) => {
+  if (a === "-f" && args.length > i + 1) {
+    targetFolder = args[i + 1]
+  }
+})
+
+if (fs.existsSync(getPath())) {
+  const folder = fs.readdirSync(getPath())
+  console.log(`Found ${folder.length} files`)
+} else {
+  throw `Path does not exist: ${getPath()}`
+}
 
 function getPath() {
   return join(process.cwd(), targetFolder)
@@ -10,15 +25,6 @@ function getPath() {
 
 function getFiles() {
   return fs.readdirSync(getPath())
-}
-
-function scrapeFolder() {
-  const files = getFiles()
-
-  const res = files.reduce((acc, filename) => {
-    const fileResults = scrapeFile(filename)
-    return [...acc, ...fileResults]
-  }, [])
 }
 
 function scrapeFile(filename) {
@@ -52,11 +58,25 @@ function scrapeFile(filename) {
     }
   })
 
-  clipboardy.writeSync(JSON.stringify(warningPairs))
+  return warningPairs
+}
 
-  console.log(warningPairs)
+function scrapeFolder() {
+  const files = getFiles().filter((f) => f.indexOf(".cpp") !== -1)
 
-  return filename
+  if (files.length === 0) {
+    console.log("No .cpp files found")
+    return
+  }
+
+  const res = files.reduce((acc, filename) => {
+    const fileResults = scrapeFile(filename)
+    return [...acc, ...fileResults]
+  }, [])
+
+  clipboardy.writeSync(JSON.stringify(res))
+
+  console.log(res)
 }
 
 scrapeFolder()
