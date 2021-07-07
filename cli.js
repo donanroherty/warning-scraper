@@ -49,17 +49,29 @@ function scrapeFile(filename) {
     }))
 
   const warningPairs = setErrorLines.map((el) => {
-    const params = el.text
-      .split("SetError(GetWarning(L")[1]
-      .split("));")[0]
-      .split('"')
-    const key = params[1]
-    const fallback = params[3]
+    const openSetError = el.text.indexOf("(")
+    const closeSetError = el.text.lastIndexOf(")")
+    const openGetWarning = el.text.indexOf("(", openSetError + 1)
+    const closeGetWarning = el.text.indexOf(")", closeSetError - 1)
+
+    const parameters = el.text
+      .slice(openGetWarning + 1, closeGetWarning)
+      .split('",')
+      .map((str, i, a) => {
+        const isIDOrFallback = i === 0 || i === 1
+        return isIDOrFallback ? str.slice(str.indexOf('"') + 1).trim() : str.trim()
+      })
+
+    const key = parameters[0]
+    const fallback = parameters[1]
+    const args = parameters[2]
+
     return {
       file: filename,
       line: el.line,
       key,
       fallback,
+      args,
     }
   })
 
@@ -81,7 +93,13 @@ function scrapeFolder() {
 
   const excelStr = res
     .map((item) => {
-      return `${item.key}\t${"0"}\t${item.fallback}\t${"ERROR"}`
+      const ID_3DCS = item.key
+      const VOID = 0
+      const WARNING_UI = item.fallback
+      const DESC_BOM = ""
+      const WARNING_TYPE = "WARNING"
+      const Note = ""
+      return `${ID_3DCS}\t${VOID}\t${WARNING_UI}\t${DESC_BOM}\t${WARNING_TYPE}\t${Note}`
     })
     .join("\n")
 
