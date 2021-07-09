@@ -40,7 +40,7 @@ function scrapeFile(filename) {
 
   const setErrorLines = lines
     .filter((lineObj) => {
-      const idx = lineObj.text.indexOf("SetError(GetWarning(L")
+      const idx = lineObj.text.indexOf("GetWarning(L")
       return idx > -1
     })
     .map((lineObj) => ({
@@ -48,32 +48,27 @@ function scrapeFile(filename) {
       text: lineObj.text.trim(),
     }))
 
-  const warningPairs = setErrorLines.map((el) => {
-    const openSetError = el.text.indexOf("(")
-    const closeSetError = el.text.lastIndexOf(")")
-    const openGetWarning = el.text.indexOf("(", openSetError + 1)
-    const closeGetWarning = el.text.indexOf(")", closeSetError - 1)
+  const warningPairs = setErrorLines
+    .map((el) => {
+      const openGetWarning = el.text.lastIndexOf("(")
+      const closeGetWarning = el.text.indexOf(")") - 1
 
-    const parameters = el.text
-      .slice(openGetWarning + 1, closeGetWarning)
-      .split('",')
-      .map((str, i, a) => {
-        const isIDOrFallback = i === 0 || i === 1
-        return isIDOrFallback ? str.slice(str.indexOf('"') + 1).trim() : str.trim()
-      })
+      const parameters = el.text
+        .slice(openGetWarning + 1, closeGetWarning)
+        .split('",')
+        .map((s) => s.trim().replace('L"', ""))
 
-    const key = parameters[0]
-    const fallback = parameters[1]
-    const args = parameters[2]
+      const key = parameters[0]
+      const fallback = parameters[1]
 
-    return {
-      file: filename,
-      line: el.line,
-      key,
-      fallback,
-      args,
-    }
-  })
+      return {
+        file: filename,
+        line: el.line,
+        key,
+        fallback,
+      }
+    })
+    .filter((w) => w.key !== "-" && w.key.length > 0)
 
   return warningPairs
 }
@@ -82,7 +77,7 @@ function scrapeFolder() {
   const files = getFiles().filter((f) => f.indexOf(".cpp") !== -1)
 
   if (files.length === 0) {
-    console.log("No .cpp files found")
+    console.warn("No .cpp files found")
     return
   }
 
@@ -106,6 +101,8 @@ function scrapeFolder() {
   clipboardy.writeSync(excelStr)
 
   console.log(excelStr)
+
+  console.log(`Scraped ${res.length} errors`)
 }
 
 scrapeFolder()
