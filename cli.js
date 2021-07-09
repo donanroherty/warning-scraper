@@ -29,27 +29,36 @@ function getFiles() {
   return fs.readdirSync(getPath())
 }
 
-function scrapeFile(filename) {
-  const path = join(getPath(), filename)
+function scrapeFile(file) {
+  const path = join(getPath(), file)
   const contents = fs.readFileSync(path, "utf-8")
 
   const lines = contents.split("\n").map((text, idx) => ({
-    line: idx + 1,
+    lineIdx: idx,
     text,
   }))
 
-  const setErrorLines = lines
-    .filter((lineObj) => {
-      const idx = lineObj.text.indexOf("GetWarning(L")
-      return idx > -1
-    })
+  const getCommentAtLine = (lineIdx) => {
+    const line = lines[lineIdx]
+    if (line) {
+      const trimmed = line.text.trim()
+      if (trimmed.indexOf("//") === 0) {
+        return trimmed.slice(2).trim()
+      }
+    }
+
+    return undefined
+  }
+
+  const warningLines = lines
+    .filter((lineObj) => lineObj.text.indexOf("GetWarning(L") > -1)
     .map((lineObj) => ({
-      line: lineObj.line,
+      lineIdx: lineObj.lineIdx,
       text: lineObj.text.trim(),
     }))
 
-  const warningPairs = setErrorLines
-    .map((el) => {
+  const warningPairs = warningLines
+    .reduce((acc, el) => {
       const openGetWarning = el.text.lastIndexOf("(")
       const closeGetWarning = el.text.indexOf(")") - 1
 
@@ -60,14 +69,20 @@ function scrapeFile(filename) {
 
       const key = parameters[0]
       const fallback = parameters[1]
+      const comment = getCommentAtLine(el.lineIdx - 1)
 
-      return {
-        file: filename,
-        line: el.line,
+      if (acc.findIndex((wp) => wp.key === key) !== -1) return acc
+
+      const item = {
+        file,
+        lineIdx: el.lineIdx,
         key,
         fallback,
+        comment,
       }
-    })
+
+      return [...acc, item]
+    }, [])
     .filter((w) => w.key !== "-" && w.key.length > 0)
 
   return warningPairs
@@ -93,7 +108,7 @@ function scrapeFolder() {
       const WARNING_UI = item.fallback
       const DESC_BOM = ""
       const WARNING_TYPE = "WARNING"
-      const Note = ""
+      const Note = item.comment ?? ""
       return `${ID_3DCS}\t${VOID}\t${WARNING_UI}\t${DESC_BOM}\t${WARNING_TYPE}\t${Note}`
     })
     .join("\n")

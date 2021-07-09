@@ -1,4 +1,6 @@
-	
+	SetError(GetWarning(L"BP_LT_MIN_HEI", L"Backing below\nmin height ($1)", minStr));
+
+
   SetError(GetWarning(L"LZ_DRILLING_CONFLICT_CAUSE", L"Drilling Conflict $1 Conflict", m_sOverlapCause));
 
 
